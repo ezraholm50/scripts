@@ -1,7 +1,13 @@
-HTTPS_CONF="/etc/nginx/sites-available/80.conf
+HTTPS_CONF="/etc/nginx/sites-available/80.conf"
 APACHEHOSTIP="apacheip"
 NGINXHOSTIP="nginxip"
 DOMAIN="example.com"
+# Nginx variables
+upstream='$upstream'
+host='$host'
+remote_addr='$remote_addr'
+proxy_add_x_forwarded_for='$proxy_add_x_forwarded_for'
+request_uri='$request_uri'
 
 # Generate $HTTP_CONF
 if [ -f $HTTP_CONF ];

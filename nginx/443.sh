@@ -1,9 +1,15 @@
-HTTPS_CONF="/etc/nginx/sites-available/443.conf
+HTTPS_CONF="/etc/nginx/sites-available/443.conf"
 APACHEHOSTIP="apacheip"
 NGINXHOSTIP="nginxip"
 SSLPATH="/etc/ssl"
 DOMAIN="example.com"
 CERTNAME="certificate"
+# Nginx variables
+upstream='$upstream'
+host='$host'
+remote_addr='$remote_addr'
+proxy_add_x_forwarded_for='$proxy_add_x_forwarded_for'
+request_uri='$request_uri'
 
 # Generate $HTTPS_CONF
 if [ -f $HTTPS_CONF ];
