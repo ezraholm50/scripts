@@ -1,4 +1,4 @@
-HTTPS_CONF="/etc/nginx/sites-available/80.conf"
+HTTP_CONF="/etc/nginx/sites-available/80.conf"
 APACHEHOSTIP="apacheip"
 NGINXHOSTIP="nginxip"
 DOMAIN="example.com"
@@ -16,7 +16,6 @@ if [ -f $HTTP_CONF ];
 else
         touch "$HTTP_CONF"
         cat << HTTP_CREATE > "$HTTP_CONF"
-
 server {
 
 	real_ip_header     X-Forwarded-For;

@@ -106,6 +106,14 @@ then
 	echo "Something went wrong, exiting..."
         exit 1
 else
-	echo "Configtest OK!."
+	echo "Configtest OK!"
+	sleep 5
 fi
 
+# Update system
+apt-get install aptitude -y
+apt-get update -y
+aptitude full-upgrade -y
+
+# Reboot
+reboot

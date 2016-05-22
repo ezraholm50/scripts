@@ -18,7 +18,6 @@ if [ -f $HTTPS_CONF ];
 else
         touch "$HTTPS_CONF"
         cat << HTTPS_CREATE > "$HTTPS_CONF"
-
 server {
 
 	real_ip_header     X-Forwarded-For;
