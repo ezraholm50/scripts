@@ -1,14 +1,29 @@
+#!/bin/bash
+
+# This script sets up a new host for a host on Nginx Reverse Proxy that are connected to Cloudflare.
+# Based on:
+# https://www.techandme.se/update-your-nginx-config-with-the-latest-ip-ranges-from-cloudflare/
+# https://www.techandme.se/set-up-nginx-reverse-proxy/
+
+
 set -e
 
-## SSL ##
-
-DOMAIN="rutorrent"
+DOMAIN="example"
 HOSTNAME=$DOMAIN.techandme
 URL=$HOSTNAME.se
+
+# Ports
+APACHEPORT="80"
+NGINXPORT="443"
 
 # IP
 APACHEHOSTIP="192.168.8.100"
 NGINXHOSTIP="192.168.4.201"
+
+# Error message 404 500 502 503 504
+ERRORMSG="Down for maintenance. You are now being redirected to our co-location server..."
+SECONDS=4 
+REDIRECT=https://techandme.fsgo.se
 
 # SSL
 SSLPATH="/etc/nginx/ssl/techandme"
@@ -42,7 +57,7 @@ server {
 	real_ip_header     X-Forwarded-For;
         real_ip_recursive  on;
 
-        listen $NGINXHOSTIP:443 ssl;
+        listen $NGINXHOSTIP:$NGINXPORT ssl;
 
         ssl on;
         ssl_certificate $SSLPATH/$CERTNAME.pem;
@@ -54,7 +69,7 @@ server {
 	ssl_prefer_server_ciphers on;
 
         server_name $URL;
-        set $upstream $APACHEHOSTIP:80;
+        set $upstream $APACHEHOSTIP:$APACHEPORT;
 
         location / {
                 proxy_pass_header Authorization;
@@ -74,13 +89,11 @@ server {
 }
 
 server {
-  listen $NGINXHOSTIP:80;
+  listen $NGINXHOSTIP:$APACHEPORT;
   server_name $URL;
   return 301 https://$DOMAIN/$request_uri;
 }
 HTTPS_CREATE
-
-echo "$HTTPS_CONF was successfully created"
 fi
 
 # cloudflare-new-ip.sh
@@ -90,40 +103,53 @@ if [ -f $CFDIR/$HOSTNAME/cloudflare-new-ip.sh ];
 else
         touch "$CFDIR/$HOSTNAME/cloudflare-new-ip.sh"
         cat << CFNEWIP > "$CFDIR/$HOSTNAME/cloudflare-new-ip.sh"
-( cat $CFDIR/$HOSTNAME/nginx-oc-before ; wget -O- https://www.cloudflare.com/ips-v4 | sed 's/.*/     	set_real_ip_from &;/' ; cat $CFDIR/$HOSTNAME/nginx-oc-after ) > $HTTPS_CONF
+( cat $CFDIR/$HOSTNAME/nginx-$DOMAIN-before ; wget -O- https://www.cloudflare.com/ips-v4 | sed 's/.*/     	set_real_ip_from &;/' ; cat $CFDIR/$HOSTNAME/nginx-$DOMAIN-after ) > $HTTPS_CONF
 CFNEWIP
+fi
 
-
-# ( cat /etc/nginx/sites-available/cloudflare_ip//nginx-oc-before ; wget -O- https://www.cloudflare.com/ips-v4 | sed 's/.*/     	set_real_ip_from &;/' ; cat /etc/nginx/sites-available/cloudflare_ip//nginx-oc-after ) > /etc/nginx/sites-available/rutorrent.conf
-
-
-echo "$CFDIR/$HOSTNAME/cloudflare-new-ip.sh was successfully created"
+# Error message when server is down
+if [ -f /usr/share/nginx/html/$DOMAIN-error.html ];
+        then
+        echo "$DOMAIN-error.html exists"
+else
+        touch "/usr/share/nginx/html/$DOMAIN-error.html"
+        cat << NGERROR > "/usr/share/nginx/html/$DOMAIN-error.html"
+<!DOCTYPE html>
+<html>
+<head>
+   <!-- HTML meta refresh URL redirection -->
+   <meta http-equiv="refresh"
+   content="$SECONDS; url=$REDIRECT">
+</head>
+<body>
+   <p>$ERRORMSG</p>
+</body>
+</html>
+NGERROR
 fi
 
 # Nginx before
 if [ -f $CFDIR/$HOSTNAME/nginx-$DOMAIN-before ];
         then
-        echo "nginx-oc-before exists"
+        echo "nginx-$DOMAIN-before exists"
 else
         touch "$CFDIR/$HOSTNAME/nginx-$DOMAIN-before"
         cat << NGBEFORE > "$CFDIR/$HOSTNAME/nginx-$DOMAIN-before"
 server {
-        # Cloudflare IP som maskeras av mod_real_ip
+        # Cloudflare IP that is masked by mod_real_ip
 
-	error_page 404 500 502 503 504 /$DOMAIN_error.html;
-        location = /$DOMAIN_error.html {
+	error_page 404 500 502 503 504 /$DOMAIN-error.html;
+        location = /$DOMAIN-error.html {
                 root /usr/share/nginx/html;
                 internal;
         }
 NGBEFORE
-
-echo "$CFDIR/$HOSTNAME/nginx-$DOMAIN-before was successfully created"
 fi
 
 # Nginx after
 if [ -f $CFDIR/$HOSTNAME/nginx-$DOMAIN-after ];
         then
-        echo "nginx-oc-after exists"
+        echo "nginx-$DOMAIN-after exists"
 else
         touch "$CFDIR/$HOSTNAME/nginx-$DOMAIN-after"
         cat << NGAFTER > "$CFDIR/$HOSTNAME/nginx-$DOMAIN-after"
@@ -131,7 +157,7 @@ else
 	real_ip_header     X-Forwarded-For;
         real_ip_recursive  on;
 
-        listen $NGINXHOSTIP:443 ssl;
+        listen $NGINXHOSTIP:$NGINXPORT ssl;
 
         ssl on;
         ssl_certificate $SSLPATH/$CERTNAME.pem;
@@ -143,7 +169,7 @@ else
 
 	ssl_prefer_server_ciphers on;
         server_name $URL;
-        set $upstream  $APACHEHOSTIP:443;
+        set $upstream  $APACHEHOSTIP:$NGINXPORT;
 
         location / {
                 proxy_pass_header Authorization;
@@ -163,17 +189,26 @@ else
 }
 
 server {
-  listen $NGINXHOSTIP:80;
+  listen $NGINXHOSTIP:$APACHEPORT;
   server_name $URL;
   return 301 https://$URL$request_uri;
 }
 NGAFTER
-echo "$CFDIR/$HOSTNAME/nginx-$DOMAIN-after was successfully created"
 fi
 
 # Put the conf in new_ip_cloudflare.sh
-sed -i '1s/^/"bash $CFDIR/$HOSTNAME/cloudflare-new-ip.sh"\n/' /etc/nginx/sites-enabled/new_ip_cloudflare.sh
+sed -i "1s|^|bash $CFDIR/$HOSTNAME/cloudflare-new-ip.sh\n|" /etc/nginx/sites-available/scripts/new_ip_cloudflare.sh
 
 # Enable host
 ln -s /etc/nginx/sites-available/$DOMAIN.conf /etc/nginx/sites-enabled/$DOMAIN.conf
 service nginx configtest
+if [[ $? > 0 ]]
+then
+	echo "Host creation for $URL had failed."
+        exit 1
+else
+	bash $CFDIR/$HOSTNAME/cloudflare-new-ip.sh
+	echo
+	echo "Host for $URL created and activated!"
+	exit 0
+fi
