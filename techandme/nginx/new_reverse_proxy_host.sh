@@ -204,7 +204,7 @@ ln -s /etc/nginx/sites-available/$DOMAIN.conf /etc/nginx/sites-enabled/$DOMAIN.c
 service nginx configtest
 if [[ $? > 0 ]]
 then
-	echo "Host creation for $URL had failed."
+	echo "Host creation for $URL has failed."
         exit 1
 else
 	bash $CFDIR/$HOSTNAME/cloudflare-new-ip.sh
