@@ -169,7 +169,7 @@ else
 
 	ssl_prefer_server_ciphers on;
         server_name $URL;
-        set $upstream  $APACHEHOSTIP:$NGINXPORT;
+        set $upstream $APACHEHOSTIP:$NGINXPORT;
 
         location / {
                 proxy_pass_header Authorization;
