@@ -112,7 +112,7 @@ fi
 
 # Update system
 apt-get install aptitude -y
-apt-get update -y
+apt-get update -q2 -y
 aptitude full-upgrade -y
 
 # Reboot
