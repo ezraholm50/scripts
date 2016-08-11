@@ -131,7 +131,7 @@ else
 	real_ip_header     X-Forwarded-For;
         real_ip_recursive  on;
 
-        listen $NGINXHOSTIP:$NGINXPORT ssl;
+        listen $NGINXHOSTIP:$NGINXPORT ssl http2;
 
         ssl on;
         ssl_certificate $SSLPATH/$CERTNAME.pem;
