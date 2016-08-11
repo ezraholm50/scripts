@@ -8,6 +8,8 @@
 
 set -e
 
+## DOMAIN.HOSTNAME 	= 	example.techandme
+## URL 			= 	example.techandme.se
 DOMAIN="example"
 HOSTNAME=$DOMAIN.techandme
 URL=$HOSTNAME.se
@@ -22,7 +24,7 @@ NGINXHOSTIP="192.168.4.201"
 
 # Error message 404 500 502 503 504
 ERRORMSG="Down for maintenance. You are now being redirected to our co-location server..."
-SECONDS=4 
+SECONDS=4
 REDIRECT=https://techandme.fsgo.se
 
 # SSL
@@ -96,6 +98,16 @@ server {
 HTTPS_CREATE
 fi
 
+
+
+## Check which port is used and change proxy pass accordingly
+if [ $APACHEPORT -eq 443 ];then
+sed -i "s|proxy_pass http://|proxy_pass https://|g" $HTTPS_CONF
+fi
+
+
+
+
 # cloudflare-new-ip.sh
 if [ -f $CFDIR/$HOSTNAME/cloudflare-new-ip.sh ];
         then
@@ -106,6 +118,9 @@ else
 ( cat $CFDIR/$HOSTNAME/nginx-$DOMAIN-before ; wget -O- https://www.cloudflare.com/ips-v4 | sed 's/.*/     	set_real_ip_from &;/' ; cat $CFDIR/$HOSTNAME/nginx-$DOMAIN-after ) > $HTTPS_CONF
 CFNEWIP
 fi
+
+
+
 
 # Error message when server is down
 if [ -f /usr/share/nginx/html/$DOMAIN-error.html ];
@@ -128,6 +143,21 @@ else
 NGERROR
 fi
 
+
+
+
+# Generate DHparams chifer
+if [ -f $SSLPATH/dhparams.pem ];
+        then
+        echo "$SSLPATH/dhparams.pem exists"
+else
+openssl dhparam -out dhparams.pem 4096
+fi
+
+
+
+
+
 # Nginx before
 if [ -f $CFDIR/$HOSTNAME/nginx-$DOMAIN-before ];
         then
@@ -146,6 +176,9 @@ server {
 NGBEFORE
 fi
 
+
+
+
 # Nginx after
 if [ -f $CFDIR/$HOSTNAME/nginx-$DOMAIN-after ];
         then
@@ -162,9 +195,10 @@ else
         ssl on;
         ssl_certificate $SSLPATH/$CERTNAME.pem;
         ssl_certificate_key $SSLPATH/$CERTNAME.key;
+	ssl_dhparam $SSLPATH/dhparams.pem;
         ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
 
-        # Only use safe chiffers
+        # Only use safe chiphers
 	ssl_ciphers 'ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:AES:CAMELLIA:DES-CBC3-SHA:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!aECDH:!EDH-DSS-DES-CBC3-SHA:!EDH-RSA-DES-CBC3-SHA:!KRB5-DES-CBC3-SHA';
 
 	ssl_prefer_server_ciphers on;
@@ -196,8 +230,19 @@ server {
 NGAFTER
 fi
 
+
+# Check which port is used and change proxy pass accordingly
+if [ $APACHEPORT -eq 443 ];then
+sed -i "s|proxy_pass http://|proxy_pass https://|g" $CFDIR/$HOSTNAME/nginx-$DOMAIN-after
+fi
+
+
+
 # Put the conf in new_ip_cloudflare.sh
 sed -i "1s|^|bash $CFDIR/$HOSTNAME/cloudflare-new-ip.sh\n|" /etc/nginx/sites-available/scripts/new_ip_cloudflare.sh
+
+
+
 
 # Enable host
 ln -s /etc/nginx/sites-available/$DOMAIN.conf /etc/nginx/sites-enabled/$DOMAIN.conf
