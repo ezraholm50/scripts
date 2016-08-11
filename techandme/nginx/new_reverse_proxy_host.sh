@@ -47,65 +47,6 @@ request_uri='$request_uri'
 # Create dirs for script
 mkdir $CFDIR/$HOSTNAME
 
-# Generate $HTTPS_CONF
-if [ -f $HTTPS_CONF ];
-        then
-        echo "Virtual Host exists"
-else
-        touch "$HTTPS_CONF"
-        cat << HTTPS_CREATE > "$HTTPS_CONF"
-server {
-
-	real_ip_header     X-Forwarded-For;
-        real_ip_recursive  on;
-
-        listen $NGINXHOSTIP:$NGINXPORT ssl;
-
-        ssl on;
-        ssl_certificate $SSLPATH/$CERTNAME.pem;
-        ssl_certificate_key $SSLPATH/$CERTNAME.key;
-        ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
-
-        # Only use safe chiffers
-	ssl_ciphers 'ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:AES:CAMELLIA:DES-CBC3-SHA:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!aECDH:!EDH-DSS-DES-CBC3-SHA:!EDH-RSA-DES-CBC3-SHA:!KRB5-DES-CBC3-SHA';
-	ssl_prefer_server_ciphers on;
-
-        server_name $URL;
-        set $upstream $APACHEHOSTIP:$APACHEPORT;
-
-        location / {
-                proxy_pass_header Authorization;
-                proxy_pass http://$upstream;
-                proxy_set_header Host $host;
-                proxy_set_header X-Real-IP  $remote_addr;
-                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                proxy_http_version 1.1;
-                proxy_set_header Connection "";
-                proxy_buffering off;
-                proxy_request_buffering off;
-		client_max_body_size 0;
-                proxy_read_timeout  36000s;
-                proxy_redirect off;
-                proxy_ssl_session_reuse off;
-        }
-}
-
-server {
-  listen $NGINXHOSTIP:$APACHEPORT;
-  server_name $URL;
-  return 301 https://$DOMAIN/$request_uri;
-}
-HTTPS_CREATE
-fi
-
-
-
-## Check which port is used and change proxy pass accordingly
-if [ $APACHEPORT -eq 443 ];then
-sed -i "s|proxy_pass http://|proxy_pass https://|g" $HTTPS_CONF
-fi
-
-
 
 
 # cloudflare-new-ip.sh
@@ -151,7 +92,7 @@ if [ -f $SSLPATH/dhparams.pem ];
         then
         echo "$SSLPATH/dhparams.pem exists"
 else
-openssl dhparam -out dhparams.pem 4096
+openssl dhparam -out $SSLPATH/dhparams.pem 4096
 fi
 
 
@@ -196,7 +137,7 @@ else
         ssl_certificate $SSLPATH/$CERTNAME.pem;
         ssl_certificate_key $SSLPATH/$CERTNAME.key;
 	ssl_dhparam $SSLPATH/dhparams.pem;
-        ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+        ssl_protocols SSLv3 TLSv1 TLSv1.1 TLSv1.2;
 
         # Only use safe chiphers
 	ssl_ciphers 'ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:AES:CAMELLIA:DES-CBC3-SHA:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!aECDH:!EDH-DSS-DES-CBC3-SHA:!EDH-RSA-DES-CBC3-SHA:!KRB5-DES-CBC3-SHA';
@@ -218,7 +159,7 @@ else
 		client_max_body_size 0;
                 proxy_read_timeout  36000s;
                 proxy_redirect off;
-                proxy_ssl_session_reuse off;
+                proxy_ssl_session_reuse on;
         }
 }
 
@@ -231,15 +172,26 @@ NGAFTER
 fi
 
 
-# Check which port is used and change proxy pass accordingly
+
+# Write new host
+bash $CFDIR/$HOSTNAME/cloudflare-new-ip.sh
+
+
+
+
+
+# Check which port is used and change settings accordingly
 if [ $APACHEPORT -eq 443 ];then
 sed -i "s|proxy_pass http://|proxy_pass https://|g" $CFDIR/$HOSTNAME/nginx-$DOMAIN-after
+sed -i "s|proxy_ssl_session_reuse on|proxy_ssl_session_reuse off|g" $CFDIR/$HOSTNAME/nginx-$DOMAIN-after
 fi
+
 
 
 
 # Put the conf in new_ip_cloudflare.sh
 sed -i "1s|^|bash $CFDIR/$HOSTNAME/cloudflare-new-ip.sh\n|" /etc/nginx/sites-available/scripts/new_ip_cloudflare.sh
+
 
 
 
