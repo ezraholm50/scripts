@@ -150,8 +150,8 @@ else
         listen $NGINXHOSTIP:$NGINXPORT ssl http2;
 
         ssl on;
-        ssl_certificate $SSLPATH/$CERTNAME.pem;
-        ssl_certificate_key $SSLPATH/$CERTNAME.key;
+        ssl_certificate $SSLPATH/$CERTNAME;
+        ssl_certificate_key $SSLPATH/$KEY;
 	ssl_dhparam $SSLPATH/dhparams.pem;
         ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
         ssl_session_timeout 1d;
