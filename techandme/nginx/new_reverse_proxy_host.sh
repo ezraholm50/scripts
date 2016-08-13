@@ -44,8 +44,21 @@ request_uri='$request_uri'
 ##################################################
 
 # Create dirs for script
-mkdir $CFDIR/$HOSTNAME
+if [ -f $CFDIR/$HOSTNAME ];
+then
+        rm -r $CFDIR/$HOSTNAME
+fi
 
+if [ -f /etc/nginx/sites-enabled/$DOMAIN.conf ];
+then 
+        rm /etc/nginx/sites-enabled/$DOMAIN.conf
+fi
+
+if [ -f /etc/nginx/sites-available/$DOMAIN.conf ];
+then 
+        rm /etc/nginx/sites-available/$DOMAIN.conf
+fi
+mkdir $CFDIR/$HOSTNAME
 
 
 # cloudflare-new-ip.sh
@@ -62,9 +75,8 @@ fi
 
 # Error message when server is down
 if [ -f /usr/share/nginx/html/$DOMAIN-error.html ];
-        then
-        echo "$DOMAIN-error.html exists"
-else
+then
+        rm /usr/share/nginx/html/$DOMAIN-error.html
         touch "/usr/share/nginx/html/$DOMAIN-error.html"
         cat << NGERROR > "/usr/share/nginx/html/$DOMAIN-error.html"
 <!DOCTYPE html>
@@ -82,7 +94,9 @@ NGERROR
 fi
 
 
+
 # Let's Encrypt
+echo "Generating SSL certificate..."
 systemctl stop nginx.service
 bash /opt/letsencrypt//letsencrypt-auto certonly --standalone -d $URL
 if [[ $? > 0 ]]
