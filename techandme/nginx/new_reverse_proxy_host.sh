@@ -5,7 +5,6 @@
 # https://www.techandme.se/update-your-nginx-config-with-the-latest-ip-ranges-from-cloudflare/
 # https://www.techandme.se/set-up-nginx-reverse-proxy/
 
-
 set -e
 
 ## DOMAIN.HOSTNAME 	= 	example.techandme
@@ -23,7 +22,7 @@ APACHEHOSTIP="192.168.8.100"
 NGINXHOSTIP="192.168.4.201"
 
 # Error message 404 500 502 503 504
-ERRORMSG="Down for maintenance. You are now being redirected to our co-location server..."
+ERRORMSG="Down for maintenance. Please try again in a few minutes..."
 SECONDS=4
 REDIRECT=https://techandme.fsgo.se
 
@@ -61,8 +60,6 @@ CFNEWIP
 fi
 
 
-
-
 # Error message when server is down
 if [ -f /usr/share/nginx/html/$DOMAIN-error.html ];
         then
@@ -85,6 +82,29 @@ NGERROR
 fi
 
 
+# Let's Encrypt
+systemctl stop nginx.service
+bash /opt/letsencrypt//letsencrypt-auto certonly --standalone -d $URL
+if [[ $? > 0 ]]
+then
+	systemctl start nginx.service
+	exit 1
+else
+	crontab -u root -l | { cat; echo "@monthly /etc/nginx/sites-available/scripts/letsencryptrenew.sh"; } | crontab -u root -
+	systemctl start nginx.service
+fi
+
+cat << CRONTAB > "/etc/nginx/sites-available/scripts/letsencryptrenew.sh"
+#!/bin/sh
+systemctl stop nginx.service
+set -e
+if ! /etc/letsencrypt/letsencrypt-auto renew > /var/log/letsencrypt/renew.log 2>&1 ; then
+        echo Automated renewal failed:
+        cat /var/log/letsencrypt/renew.log
+        exit 1
+fi
+systemctl start nginx.service
+CRONTAB
 
 
 # Generate DHparams chifer
@@ -94,8 +114,6 @@ if [ -f $SSLPATH/dhparams.pem ];
 else
 openssl dhparam -out $SSLPATH/dhparams.pem 4096
 fi
-
-
 
 
 
@@ -118,8 +136,6 @@ NGBEFORE
 fi
 
 
-
-
 # Nginx after
 if [ -f $CFDIR/$HOSTNAME/nginx-$DOMAIN-after ];
         then
@@ -137,12 +153,20 @@ else
         ssl_certificate $SSLPATH/$CERTNAME.pem;
         ssl_certificate_key $SSLPATH/$CERTNAME.key;
 	ssl_dhparam $SSLPATH/dhparams.pem;
-        ssl_protocols SSLv3 TLSv1 TLSv1.1 TLSv1.2;
+        ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
+        ssl_session_timeout 1d;
+        ssl_session_cache shared:SSL:10m;
+        ssl_stapling on;
+        ssl_stapling_verify on;
 
         # Only use safe chiphers
 	ssl_ciphers 'ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES256-GCM-SHA384:DHE-RSA-AES128-GCM-SHA256:DHE-DSS-AES128-GCM-SHA256:kEDH+AESGCM:ECDHE-RSA-AES128-SHA256:ECDHE-ECDSA-AES128-SHA256:ECDHE-RSA-AES128-SHA:ECDHE-ECDSA-AES128-SHA:ECDHE-RSA-AES256-SHA384:ECDHE-ECDSA-AES256-SHA384:ECDHE-RSA-AES256-SHA:ECDHE-ECDSA-AES256-SHA:DHE-RSA-AES128-SHA256:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA256:DHE-RSA-AES256-SHA256:DHE-DSS-AES256-SHA:DHE-RSA-AES256-SHA:AES128-GCM-SHA256:AES256-GCM-SHA384:AES128-SHA256:AES256-SHA256:AES128-SHA:AES256-SHA:AES:CAMELLIA:DES-CBC3-SHA:!aNULL:!eNULL:!EXPORT:!DES:!RC4:!MD5:!PSK:!aECDH:!EDH-DSS-DES-CBC3-SHA:!EDH-RSA-DES-CBC3-SHA:!KRB5-DES-CBC3-SHA';
-
 	ssl_prefer_server_ciphers on;
+	
+	# Add secure headers
+	add_header Strict-Transport-Security "max-age=63072000; includeSubDomains; preload";
+	add_header X-Content-Type-Options nosniff;
+	
         server_name $URL;
         set $upstream $APACHEHOSTIP:$NGINXPORT;
 
@@ -172,12 +196,8 @@ NGAFTER
 fi
 
 
-
 # Write new host
 bash $CFDIR/$HOSTNAME/cloudflare-new-ip.sh
-
-
-
 
 
 # Check which port is used and change settings accordingly
@@ -187,13 +207,8 @@ sed -i "s|proxy_ssl_session_reuse on|proxy_ssl_session_reuse off|g" $CFDIR/$HOST
 fi
 
 
-
-
 # Put the conf in new_ip_cloudflare.sh
 sed -i "1s|^|bash $CFDIR/$HOSTNAME/cloudflare-new-ip.sh\n|" /etc/nginx/sites-available/scripts/new_ip_cloudflare.sh
-
-
-
 
 
 # Enable host
