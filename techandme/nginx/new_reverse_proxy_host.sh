@@ -27,8 +27,9 @@ SECONDS=4
 REDIRECT=https://techandme.fsgo.se
 
 # SSL
-SSLPATH="/etc/nginx/ssl/techandme"
-CERTNAME="techandme_wild"
+SSLPATH="/etc/letsencrypt/live/$URL"
+CERTNAME="fullchain.pem"
+KEY="privkey.pem"
 HTTPS_CONF="/etc/nginx/sites-available/$DOMAIN.conf"
 
 # CF script dir
