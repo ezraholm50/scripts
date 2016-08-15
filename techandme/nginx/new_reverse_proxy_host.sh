@@ -183,7 +183,7 @@ else
 	add_header X-Content-Type-Options nosniff;
 	
         server_name $URL;
-        set $upstream $APACHEHOSTIP:$NGINXPORT;
+        set $upstream $APACHEHOSTIP:$APACHEPORT;
 
         location / {
                 proxy_pass_header Authorization;
@@ -198,7 +198,7 @@ else
 		client_max_body_size 0;
                 proxy_read_timeout  36000s;
                 proxy_redirect off;
-                proxy_ssl_session_reuse on;
+                proxy_ssl_session_reuse off;
         }
 }
 
