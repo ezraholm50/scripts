@@ -102,12 +102,12 @@ systemctl stop nginx.service
 bash /opt/letsencrypt//letsencrypt-auto certonly --standalone -d $URL
 if [[ $? > 0 ]]
 then
-#	systemctl start nginx.service
-#	exit 1
-#else
+	systemctl start nginx.service
+	exit 1
+else
 #	crontab -u root -l | { cat; echo "@monthly /etc/nginx/sites-available/scripts/letsencryptrenew.sh"; } | crontab -u root -
-#	systemctl start nginx.service
-#fi
+	systemctl start nginx.service
+fi
 
 cat << CRONTAB > "/etc/nginx/sites-available/scripts/letsencryptrenew.sh"
 #!/bin/sh
@@ -120,7 +120,6 @@ if ! /etc/letsencrypt/letsencrypt-auto renew > /var/log/letsencrypt/renew.log 2>
 fi
 systemctl start nginx.service
 CRONTAB
-fi
 
 # Generate DHparams chifer
 if [ -f $SSLPATH/dhparams.pem ];
