@@ -105,7 +105,7 @@ then
 	systemctl start nginx.service
 	exit 1
 else
-#	crontab -u root -l | { cat; echo "@monthly /etc/nginx/sites-available/scripts/letsencryptrenew.sh"; } | crontab -u root -
+	crontab -u root -l | { cat; echo "@monthly /etc/nginx/sites-available/scripts/letsencryptrenew.sh"; } | crontab -u root -
 	systemctl start nginx.service
 fi
 
