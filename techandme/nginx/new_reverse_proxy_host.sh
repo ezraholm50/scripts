@@ -234,6 +234,7 @@ then
         exit 1
 else
 	bash $CFDIR/$HOSTNAME/cloudflare-new-ip.sh
+	service nginx reload
 	echo
 	echo "Host for $URL created and activated!"
 	exit 0
