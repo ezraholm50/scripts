@@ -116,7 +116,7 @@ cat << CRONTAB > "/etc/nginx/sites-available/scripts/letsencryptrenew.sh"
 #!/bin/sh
 systemctl stop nginx.service
 set -e
-if ! /etc/letsencrypt/letsencrypt-auto renew > /var/log/letsencrypt/renew.log 2>&1 ; then
+if ! /opt/letsencrypt/letsencrypt-auto renew > /var/log/letsencrypt/renew.log 2>&1 ; then
         echo Automated renewal failed:
         cat /var/log/letsencrypt/renew.log
         exit 1
