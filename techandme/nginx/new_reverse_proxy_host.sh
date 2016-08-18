@@ -44,7 +44,7 @@ request_uri='$request_uri'
 
 ##################################################
 
-# Create dirs for script
+# Remove dirs for script
 if [ -d $CFDIR/$HOSTNAME ];
 then
         rm -r $CFDIR/$HOSTNAME
@@ -59,6 +59,9 @@ if [ -f /etc/nginx/sites-available/$DOMAIN.conf ];
 then 
         rm /etc/nginx/sites-available/$DOMAIN.conf
 fi
+
+# Create cf dir
+mkdir $CFDIR
 mkdir $CFDIR/$HOSTNAME
 
 
