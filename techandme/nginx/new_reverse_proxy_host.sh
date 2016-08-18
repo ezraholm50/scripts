@@ -24,7 +24,7 @@ NGINXHOSTIP="192.168.4.201"
 # Error message 404 500 502 503 504
 ERRORMSG="Down for maintenance. Please try again in a few minutes..."
 SECONDS=4
-REDIRECT=https://techandme.fsgo.se
+REDIRECT=https://techandmedown.fsgo.se/
 
 # SSL
 SSLPATH="/etc/letsencrypt/live/$URL"
