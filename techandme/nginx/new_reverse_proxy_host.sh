@@ -124,6 +124,8 @@ fi
 systemctl start nginx.service
 CRONTAB
 
+chmod +x /etc/nginx/sites-available/scripts/letsencryptrenew.sh
+
 # Generate DHparams chifer
 if [ -f $SSLPATH/dhparams.pem ];
         then
