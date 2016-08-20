@@ -122,6 +122,13 @@ if ! /opt/letsencrypt/letsencrypt-auto renew > /var/log/letsencrypt/renew.log 2>
         exit 1
 fi
 systemctl start nginx.service
+if [[ $? -gt 0 ]]
+then
+        echo "Let's Encrypt FAILED!"--$(date +%Y-%m-%d_%H:%M) >> /var/log/letsencrypt/cronjob.log
+        reboot
+else
+        echo "Let's Encrypt SUCCESS!"--$(date +%Y-%m-%d_%H:%M) >> /var/log/letsencrypt/cronjob.log
+fi
 CRONTAB
 
 chmod +x /etc/nginx/sites-available/scripts/letsencryptrenew.sh
