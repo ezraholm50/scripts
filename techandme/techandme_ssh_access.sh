@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # This script will authorize Tech and Me to access your server via SSH.
-# Please run this by typing this command: 'sudo bash ssh-auth-techandme.sh'
+# Please run this by typing this command: 'sudo bash techandme_ssh_access.sh'
 
 #################################################################
 # Please select which user to grant access for Tech and Me by	#
