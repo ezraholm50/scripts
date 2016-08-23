@@ -17,7 +17,7 @@ WANIP=$(dig +short myip.opendns.com @resolver1.opendns.com)
 LANIP=$(hostname -I | cut -d ' ' -f 1)
 
 # Must be root
-[[ `id -u` -eq 0 ]] || { echo "Must be root to run script, in Ubuntu type: sudo bash ssh-auth-techandme.sh"; exit 1; }
+[[ `id -u` -eq 0 ]] || { echo "Must be root to run script, in Ubuntu type: sudo bash techandme_ssh_access.sh"; exit 1; }
 
 # Create $USER if not existing
 getent passwd $USER  > /dev/null
