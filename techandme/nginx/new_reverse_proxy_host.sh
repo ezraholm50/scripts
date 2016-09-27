@@ -111,6 +111,7 @@ else
 	systemctl start nginx.service
 fi
 
+mkdir -p /etc/nginx/sites-available/scripts
 cat << CRONTAB > "/etc/nginx/sites-available/scripts/letsencryptrenew.sh"
 #!/bin/sh
 systemctl stop nginx.service
