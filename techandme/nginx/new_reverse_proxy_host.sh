@@ -98,11 +98,10 @@ NGERROR
 fi
 
 
-
 # Let's Encrypt
 echo "Generating SSL certificate..."
 systemctl stop nginx.service
-bash /opt/letsencrypt//letsencrypt-auto certonly --standalone -d $URL
+bash /opt/letsencrypt/letsencrypt-auto certonly --standalone -d $URL
 if [[ $? > 0 ]]
 then
 	systemctl start nginx.service
@@ -133,6 +132,7 @@ CRONTAB
 
 chmod +x /etc/nginx/sites-available/scripts/letsencryptrenew.sh
 
+
 # Generate DHparams chifer
 if [ -f $SSLPATH/dhparams.pem ];
         then
@@ -140,7 +140,6 @@ if [ -f $SSLPATH/dhparams.pem ];
 else
 openssl dhparam -out $SSLPATH/dhparams.pem 4096
 fi
-
 
 
 # Nginx before
