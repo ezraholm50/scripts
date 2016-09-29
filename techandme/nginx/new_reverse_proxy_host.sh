@@ -102,7 +102,7 @@ fi
 # Let's Encrypt
 echo "Generating SSL certificate..."
 systemctl stop nginx.service
-bash /opt/letsencrypt//letsencrypt-auto certonly --standalone -d $URL
+bash /opt/letsencrypt/letsencrypt-auto certonly --standalone -d $URL
 if [[ $? > 0 ]]
 then
 	systemctl start nginx.service
