@@ -61,8 +61,8 @@ then
 fi
 
 # Create cf dir
-mkdir $CFDIR
-mkdir $CFDIR/$HOSTNAME
+mkdir -p $CFDIR
+mkdir -p $CFDIR/$HOSTNAME
 
 
 # cloudflare-new-ip.sh
